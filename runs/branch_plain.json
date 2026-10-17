@@ -1,0 +1,12 @@
+{
+  "#": "The baseline arm: the trunk continued at 8K with the learning rate decaying (warmup-stable-decay over global steps). Then plain_32k.json and plain_128k.json.",
+  "base": "trunk_8k.json",
+  "continue_from": "ckpt/trunk_8k/step_00161999",
+  "steps": 179000,
+  "#steps": "TODO(budget): 17000 steps x 1.05M tokens = 17.8B at 8K",
+  "decay_start": 162000,
+  "decay_end": 181240,
+  "#decay_end": "the last step of the 128K stage: the linear decay to end_lr spans the 8K part and both long stages",
+  "ckpt_dir": "ckpt/branch_plain",
+  "log_dir": "log/branch_plain"
+}

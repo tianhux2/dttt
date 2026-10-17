@@ -1,0 +1,16 @@
+{
+  "#": "Partial: the 32K stage's settings, combined with an arm in plain_32k.json / method_32k.json (not runnable alone).",
+  "seq_len": 32768,
+  "segment_chunks": 8,
+  "truncate_fast_weight": false,
+  "prefix_remat_levels": 1,
+  "attn_chunk_batch": 1,
+  "#segment_chunks": "as the TPU-era 32K extension (run_extend_1b_32k.sh); check the memory with --probe_memory true first",
+  "sources": "gutenberg=cp_gutenberg_6d1ade79103fe750:0.12,pre1929=cp_pre1929_fdbe1eb1616b3ee7:0.22,loc=cp_loc_3c5e33209476779f:0.16,doab=cp_doab_81b9b60fb006df0b:0.12,arxiv=cp_arxiv_5752128469516ca7:0.14,fineweb_edu_long=fineweb_edu_long_dc_1961668477d8a501:0.04,dclm_long=dclm_long_dc_17baf11a547ae088:0.04,starcoder_repo=starcoder_repo_34497f38b4da24f3:0.13,open_web_math_long=open_web_math_long_63b0e44605eca383:0.02,finemath_long=finemath_long_09873175963dc8ee:0.01",
+  "#sources": "TODO(mix): 32K windows are 86 % books (24.2B in all); these weights keep every source under ~2.5 passes in 8.4B tokens",
+  "steps": 181000,
+  "#steps": "TODO(budget): 2000 steps x 4.2M tokens = 8.4B",
+  "ckpt_interval": 500,
+  "eval_batches": 0,
+  "#eval_batches": "no evaluation during the stage: a step batch is 128 sequences and the 4.2M-token holdout holds 127 of 32K per source; evaluate the stage's checkpoints with the post-training tools (docs/evaluation.md)"
+}

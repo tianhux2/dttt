@@ -1,0 +1,64 @@
+.env
+.venv
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Large files and model weights
+checkpoint_*
+checkpoint_*/
+*.eqx
+*.eqx.part*
+*.part*
+*.bin
+*.pt
+*.onnx
+*.safetensors
+*.ckpt
+config.json
+# ...but the model architecture configs are source, not checkpoint artefacts.
+!configs/**/config.json
+
+.jax_cache/
+wandb/
+test_path.py
+outputs/
+dream/
+scratch/
+log/
+*.log
+nohup.out
+
+.agents/
+data/
+.dataset_cache/
+
+# GCS FUSE Mount Point
+bucket
+
+# Local temporary/scratch files and reports
+FINAL_AUDIT_REPORT.md
+verify_weights.py
+
+# ---------------------------------------------------------------------------
+# The rule: the repo holds all code and the resources needed to reproduce a run
+# (configs, tokenizers, lockfile). It never holds temporary files, compile
+# caches, datasets, or checkpoints - those live under bucket/ or are rebuilt.
+# ---------------------------------------------------------------------------
+# vendored reference implementations and scratch downloads
+temp/
+# dataset files in any format, wherever they land
+*.parquet
+*.arrow
+*.npy
+*.npz
+*.tfrecord
+*.jsonl.gz
+# huggingface_hub download metadata (it also writes its own .gitignore, but
+# do not depend on that)
+**/.cache/
+*.metadata
+
+# Run outputs: links to the shared checkpoint directory
+ckpt
+ckpt/

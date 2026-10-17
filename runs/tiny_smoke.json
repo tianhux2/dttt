@@ -1,0 +1,15 @@
+{
+  "#": "Plumbing check on a new machine: the tiny model on the main mix, 20 steps with a checkpoint every 10; the same command again must resume and stop at once. On CPU add --batch_size 8.",
+  "base": "trunk_8k.json",
+  "model_config": "configs/tiny_smoke",
+  "seq_len": 512,
+  "doc_windows": false,
+  "steps": 20,
+  "warmup_steps": 5,
+  "inner_lr_warmup_steps": 5,
+  "ckpt_dir": "ckpt/tiny_smoke",
+  "ckpt_interval": 10,
+  "eval_interval": 10,
+  "eval_sources": "",
+  "log_dir": "log/tiny_smoke"
+}

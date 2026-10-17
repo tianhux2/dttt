@@ -1,0 +1,7 @@
+{
+  "#": "The method arm's 128K stage, continued from its previous stage's last checkpoint.",
+  "base": ["branch_method.json", "stage_128k.json"],
+  "continue_from": "ckpt/method_32k/step_00180999",
+  "ckpt_dir": "ckpt/method_128k",
+  "log_dir": "log/method_128k"
+}
