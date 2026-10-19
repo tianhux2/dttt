@@ -1,6 +1,9 @@
 {
   "#": "Partial: the 128K stage's settings, combined with an arm in plain_128k.json / method_128k.json (not runnable alone). Needs the 128K window index of these streams first (docs/data.md, section 5).",
   "seq_len": 131072,
+  "batch_size": 8,
+  "grad_accum": 16,
+  "#batch_size": "one sequence of 128K per GPU on one node of 8 GPUs; the step batch stays 128 sequences; check the memory with --probe_memory true first",
   "segment_chunks": 8,
   "truncate_fast_weight": true,
   "prefix_remat_levels": 1,

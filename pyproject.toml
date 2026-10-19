@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Exactly one: `uv sync --extra tpu` on a Cloud TPU VM, `uv sync --extra cuda` on GH200 (CUDA 13).
+# Exactly one: `uv sync --extra tpu` on a Cloud TPU VM, `uv sync --extra cuda` on GH200 or H100 (CUDA 13).
 # jax is pinned to the version every result so far was produced with.
 tpu = ["jax[tpu]==0.11.2", "tpu-info>=0.14.2"]
 cuda = ["jax[cuda13]==0.11.2"]

@@ -5,7 +5,6 @@
   "inner_norm_cap": 128,
   "inner_lr": 0.82,
   "self_prior": 0.1,
-  "#inner_norm_alpha": "TODO(pilot): switched on at once; whether a ramp of alpha or an earlier switch pays is a pilot question",
   "ckpt_dir": "ckpt/branch_method",
   "log_dir": "log/branch_method"
 }

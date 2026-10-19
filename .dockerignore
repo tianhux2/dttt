@@ -1,0 +1,5 @@
+# The image needs only the dependency specification; the code is mounted at run time (tools/docker_run.sh).
+*
+!pyproject.toml
+!uv.lock
+!.python-version

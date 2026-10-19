@@ -55,7 +55,7 @@ from .sharding import AXIS, batch_axis_name, constrain_replicated, make_mesh, pa
 #   kill -USR1 <pid> / kill -USR2 <pid> -> the same two by signal, on the host of that process
 # <trigger_dir> is $TTT_TRIGGER_DIR, else the repo's log/ directory (present on every pod host).
 # The per-process flags are all-gathered once per step, so one host's file is enough.
-# docs/launch.md, section 6.
+# docs/launch.md, section 7.
 TRIGGER_DIR = os.environ.get("TTT_TRIGGER_DIR") or os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "log")
 TRIGGER_SAVE, TRIGGER_STOP = 1, 2
@@ -1020,7 +1020,9 @@ def main(argv=None):
 
     # ---- probe: compile, print XLA's memory analysis, exit
     if cfg.probe_memory:
-        b = to_device(sampler.batch(0))
+        # step 0 as the loop builds it: with grad_accum > 1 the step's micro-batches stacked, [N, B, T]
+        n = cfg.grad_accum
+        b = to_device(sampler.batch(0) if n == 1 else np.stack([sampler.batch(m) for m in range(n)]))
         lowered = train_step.lower(static, params, opt_state, b, key, jnp.int32(0))
         compiled = lowered.compile().compiled          # equinox wrapper -> jax.stages.Compiled
         ma = compiled.memory_analysis()

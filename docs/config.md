@@ -28,6 +28,8 @@ Steps are global: a branch or a stage continues the step count of the run it con
 - The arms differ only in `inner_norm_alpha`, `inner_norm_cap`, `inner_lr` and `self_prior` (`branch_method.json`).
   The data order and the per-step random keys are the same, so the arms are compared pair by pair.
 - `tiny_smoke.json`: 20 steps of a tiny model on the same data, the first test of a new machine.
+- `trunk_8k_warmup.json`: the trunk's first 5000 steps (the warm-up) on 8 nodes of 8 GPUs, `128 × 1` on a
+  `dp 8 × fsdp 8` mesh, in the trunk's `ckpt_dir`: `trunk_8k.json` resumes it.
 
 ## 3. Starting from a checkpoint
 
@@ -76,8 +78,8 @@ through the 8K part (89 % of its steps) and both long stages.
 
 | field | value | meaning |
 |:--|:--|:--|
-| `batch_size` | 128 | sequences per micro-batch, over all devices: one per device |
-| `grad_accum` | 1 | micro-batches per step; the step batch is 128 × 8192 ≈ 1.05M tokens |
+| `batch_size` | 16 (8K); 8 (32K, 128K) | sequences per micro-batch, over all devices: on one node of 8 GPUs two per GPU at 8K, one at 32K and 128K |
+| `grad_accum` | 8 (8K); 16 (32K, 128K) | micro-batches per step; the step batch is always 128 sequences, at 8K 128 × 8192 ≈ 1.05M tokens |
 | `steps` | 162000 | the global step at which the run ends (170B tokens) |
 | `seed` | 42 | initialisation, data order and every step's masks |
 
@@ -118,7 +120,7 @@ through the 8K part (89 % of its steps) and both long stages.
 | `truncate_fast_weight` | false; true at 128K | stop the meta-gradient at the fast weight on segment boundaries |
 | `fused_ce_block` | 8192 | vocabulary entries per block of the cross-entropy |
 | `attn_chunk_batch` | 2 (8K); 1 (long) | chunks whose attention scores the XLA path holds at once |
-| `fsdp_size` | 0 | FSDP over all devices; N > 0: a `dp × fsdp` mesh with groups of N |
+| `fsdp_size` | 8 | 0: FSDP over all devices; N > 0: a `dp × fsdp` mesh with groups of N (8: the 1-D mesh on one node of 8 GPUs, FSDP inside each node on more) |
 | `replicate_weights` | `suffix,embed` (default) | bf16 copies gathered once per step |
 
 **Checkpoints**
@@ -158,12 +160,11 @@ The files hold the current best values; these decide them:
 
 | value | now | decided by |
 |:--|:--|:--|
-| `batch_size` | 128, one sequence per device: **decided** | measured on GH200: the critical batch is 93 (plain) to 129 (method) sequences after 1.3B tokens and grows with training; a larger batch is not faster on 128 devices |
+| `batch_size` | 128 sequences per step (`batch_size × grad_accum`): **decided** | measured on GH200: the critical batch is 93 (plain) to 129 (method) sequences after 1.3B tokens and grows with training; a larger batch is not faster on 128 devices |
 | `outer_views` | 1 | two reads cost +18 % per step and break even now; re-measure with `tools/grad_noise.py` at ~10B tokens and switch to 2 once the one-read critical batch exceeds ~180 |
 | `sources` (mix) | the v2 weights | **no packing** (decided 2026-10-17): single-document windows only, with enough long documents downloaded that no 8K source is read more than ~3 times ([data.md](data.md), section 7) |
 | `steps`, `decay_*` | 170B trunk + 17.8B + 8.4B + 4.0B tokens | the token budget |
 | `end_lr` | 1e-4 | the pilot |
-| the method's switch | at the branch point, at once | the pilot (an earlier switch, a ramp of α; a ramp needs code) |
-| `fsdp_size` | 0 | first-day throughput; a 2-D mesh is not yet laid out by the physical topology |
+| `fsdp_size` | 8, FSDP over the node's 8 GPUs: **decided** (2026-10-18) | the owner |
 | `truncate_fast_weight` at 128K | true | the pilot |
 | `wandb_project`, `keep_checkpoints` | none, all | the owner |
