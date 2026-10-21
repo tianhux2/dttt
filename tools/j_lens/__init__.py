@@ -11,6 +11,5 @@ Memory probes for the TTT / GDN masked-diffusion LM, built on the read forward o
   keys transplanted into the read).
 * ``doc_switch``: a document switch, the next document read with the previous one's memory carried, reset or off.
 
-The Jacobian lens itself (``lens``, ``calibrate``, ``memory_readout``) stayed in the research repository.  Imports
-are left to the modules so that the command lines check ``JAX_PLATFORMS`` before jax is loaded.
+Imports are left to the modules so that the command lines check ``JAX_PLATFORMS`` before jax is loaded.
 """

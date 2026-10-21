@@ -1,5 +1,5 @@
 {
-  "#": "The trunk: plain TTT at 8K with the GPU TL recipe, on data v2 without books3. Both branches continue from its last checkpoint. TODO(x) marks a value still to be decided by x (docs/config.md, 'Open values').",
+  "#": "The trunk: plain TTT at 8K with the GPU recipe, on data v2 without books3. Both branches continue from its last checkpoint. TODO(x) marks a value still to be decided by x (docs/config.md, 'Open values').",
   "model_config": "configs/1b_e2e",
   "data_root": "data/tokens",
   "sources": "gutenberg=cp_gutenberg_6d1ade79103fe750:0.10,pre1929=cp_pre1929_fdbe1eb1616b3ee7:0.11,loc=cp_loc_3c5e33209476779f:0.09,doab=cp_doab_81b9b60fb006df0b:0.06,arxiv=cp_arxiv_5752128469516ca7:0.06,pes2o=cp_pes2o_19a022ef9825dc77:0.04,fineweb_edu_long=fineweb_edu_long_dc_1961668477d8a501:0.20,dclm_long=dclm_long_dc_17baf11a547ae088:0.16,starcoder_repo=starcoder_repo_34497f38b4da24f3:0.12,open_web_math_long=open_web_math_long_63b0e44605eca383:0.03,finemath_long=finemath_long_09873175963dc8ee:0.02,wikipedia_long=wikipedia_long_1734a5e75620e284:0.01",
@@ -7,7 +7,7 @@
   "doc_windows": true,
   "seq_len": 8192,
   "batch_size": 16,
-  "#batch_size": "decided (job 3395664): a step batch of 128 sequences (batch_size x grad_accum); the critical batch is 93-129 sequences after 1.3B tokens and grows; keep it for the whole study. On one node of 8 GPUs (decided 2026-10-18): 16 x 8, two sequences of 8K per GPU; 32 x 4 halves the micro-batches if it fits (--probe_memory true)",
+  "#batch_size": "decided: a step batch of 128 sequences (batch_size x grad_accum); the critical batch is 93-129 sequences after 1.3B tokens and grows; keep it for the whole study. On one node of 8 GPUs (decided 2026-10-18): 16 x 8, two sequences of 8K per GPU; 32 x 4 halves the micro-batches if it fits (--probe_memory true)",
   "grad_accum": 8,
   "steps": 162000,
   "#steps": "TODO(budget): 162000 steps x 1.05M tokens = 170B; the branches add ~30B",

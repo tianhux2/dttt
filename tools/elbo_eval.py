@@ -68,6 +68,23 @@ def summarise(ce, cnt, ts, scales, sources) -> dict:
     return s
 
 
+def train_config(ckpt: str, seq_len: int = 0):
+    """The checkpoint's ``TrainConfig``, at another sequence length when ``seq_len`` is given (one segment)."""
+    from src.ttt.config import TrainConfig
+    tc = TrainConfig.load(os.path.join(ckpt, "train_config.json"))
+    return dataclasses.replace(tc, seq_len=seq_len, segment_chunks=0) if seq_len else tc
+
+
+def sequences(tc, sources: str, n_per_source: int, eos: int):
+    """``[(source name, ids [seq_len])]``: the first ``n_per_source`` held-out sequences of every source - by default
+    the checkpoint's training sources (under its data_root) and PG-19 test - the same for every checkpoint."""
+    from src.ttt.data import Sampler, parse_sources
+    pg19 = "pg19_test_a4dfccb3b3ac65f9" if tc.data_root else "bucket/data/tokens/pg19_test_a4dfccb3b3ac65f9"
+    srcs = parse_sources(sources) if sources else parse_sources(f"{tc.sources},pg19_test={pg19}:1.0", tc.data_root)
+    smp = Sampler(srcs, tc.seq_len, n_per_source, 42, holdout_tokens=tc.holdout or 4_194_304, eos=eos)
+    return [(s.name, np.asarray(r, np.int32)) for si, s in enumerate(srcs) for r in smp.eval_batch(si, 0)]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--ckpt", required=True)
@@ -79,29 +96,23 @@ def main(argv=None):
     ap.add_argument("--seed", type=int, default=12345)
     ap.add_argument("--tag", default="")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--seq_len", type=int, default=0, help="sequence length (default: the checkpoint's)")
     a = ap.parse_args(argv)
     if not os.environ.get("JAX_PLATFORMS"):
         sys.exit("set JAX_PLATFORMS (cuda on a GPU node)")
     import jax
     import jax.numpy as jnp
-    from src.ttt.config import TrainConfig
-    from src.ttt.data import Sampler, parse_sources
     from src.ttt.generate import load_model
     from src.ttt.model import cast_floating
     from src.ttt.train import loss_config
 
-    tc = TrainConfig.load(os.path.join(a.ckpt, "train_config.json"))
+    tc = train_config(a.ckpt, a.seq_len)
     with open(os.path.join(a.ckpt, "state.json")) as f:
         step = int(json.load(f)["step"])
     model = cast_floating(load_model(a.ckpt, a.model_config), jnp.bfloat16)   # the evaluation's compute copy
     lc = dataclasses.replace(loss_config(tc), per_sequence=True, per_token=False, mtp_weight=0.0, aux_causal_weight=0.0,
                              window_drop=0.0, self_prior=0.0, outer_views=1, time_reweighting="none", outer_t=-1.0)
-    # default: the checkpoint's training sources (under its data_root) and PG-19 test
-    pg19 = "pg19_test_a4dfccb3b3ac65f9" if tc.data_root else "bucket/data/tokens/pg19_test_a4dfccb3b3ac65f9"
-    srcs = parse_sources(a.sources) if a.sources else parse_sources(f"{tc.sources},pg19_test={pg19}:1.0", tc.data_root)
-    smp = Sampler(srcs, tc.seq_len, a.n_per_source, 42, holdout_tokens=tc.holdout or 4_194_304,
-                  eos=model.cfg.eos_token_id)
-    rows = [(s.name, np.asarray(r, np.int32)) for si, s in enumerate(srcs) for r in smp.eval_batch(si, 0)]
+    rows = sequences(tc, a.sources, a.n_per_source, model.cfg.eos_token_id)
     ids = np.stack([r for _, r in rows])
     keys = jax.vmap(lambda j: jax.random.split(jax.random.fold_in(jax.random.PRNGKey(a.seed), j))[1])(
         jnp.arange(len(ids)))

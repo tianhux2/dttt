@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Tests for Dream-style outer shift (HANDOVER Section 6):
+Tests for Dream-style outer shift:
 1. Invariant: Flipping masked x_{i+1} does not change the model input or representations at slot i,
    only its target; flipping visible x_j changes outputs at all slots.
 2. Invariant: outer_shift=False path is bit-for-bit identical to standard unshifted loss and grads.

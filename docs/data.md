@@ -62,8 +62,7 @@ the 128K stage (4.0B).
    Gutenberg id, and by the share of word 13-grams found in the 100 test books, above 0.2).
 3. `python -m ttt.data prepare --name cp_<x> --files <parquet>/*.parquet --text_key text --tokenizer configs/1b_e2e`.
 
-**Web, code, math and Wikipedia**, built in 2026-09 from Hugging Face. The download and tokenisation scripts of that
-build (`tools/download_stream.py`, `tools/prepare_all.py`) are in the research repository, not in this one:
+**Web, code, math and Wikipedia**, built in 2026-09 from Hugging Face:
 
 | stream | dataset | files | processing |
 |:--|:--|:--|:--|
@@ -76,8 +75,7 @@ build (`tools/download_stream.py`, `tools/prepare_all.py`) are in the research r
 | pg19_test | `emozilla/pg19-test` (the `deepmind/pg19` test split) | one file | `python -m ttt.data prepare --name pg19_test` |
 
 - "Long" is `python -m ttt.data filter --src <stream> --name <name>_long --min_doc_tokens 4096`.
-- The files are the first ones by name on the `main` branch, so an upstream change would change a rebuild. The
-  research repository's `docs/data_manifest/raw_files.json` has their sizes and md5 sums.
+- The files are the first ones by name on the `main` branch, so an upstream change would change a rebuild.
 - `unigram_llama3.i64` was computed with `python -m ttt.data unigram` and carried over unchanged since the TPU v4
   runs, like `pg19_test`, so that the probes and the evaluation set match every earlier result.
 

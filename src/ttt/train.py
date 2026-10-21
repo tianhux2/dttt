@@ -197,6 +197,18 @@ def check_resume_data(d: str, st: dict, sampler: Sampler, cfg: TrainConfig, log=
     log(f"[ttt] resume data check: hash {want} (version {version}) reproduced")
 
 
+def check_resume_schedule(d: str) -> None:
+    """Refuse to resume a run that decayed under the warmup-cosine schedule (before warmup-stable-decay: its
+    ``train_config.json`` has no ``decay_start``).  With lr == end_lr that schedule is WSD without decay, bit for
+    bit, and the run resumes; a decaying cosine no longer exists."""
+    with open(os.path.join(d, "train_config.json")) as f:
+        old = json.load(f)
+    if "decay_start" not in old and old["lr"] != old["end_lr"]:
+        raise ValueError(f"--resume {d}: the run decayed lr {old['lr']} -> end_lr {old['end_lr']} on the warmup-cosine "
+                         "schedule, which is gone; --continue_from it (this run's schedule from its step on, a ckpt_dir "
+                         "of its own) or --init_from it")
+
+
 def write_config(cfg: TrainConfig) -> WriteConfig:
     """The causal write's scheme (``inner_loop.WriteConfig``) from the flat CLI flags."""
     return WriteConfig(subchunks=cfg.inner_subchunks, subchunk_scale=cfg.inner_subchunk_scale,
@@ -868,6 +880,8 @@ def main(argv=None):
     # This run's own newest checkpoint first (--continue_from implies --resume auto), then the run it continues.
     resume_dir = ckpt.resolve_resume(cfg.ckpt_dir, "auto" if cfg.continue_from else cfg.resume)
     cont_dir = None if resume_dir or not cfg.continue_from else ckpt.resolve_resume(cfg.ckpt_dir, cfg.continue_from)
+    if resume_dir:
+        check_resume_schedule(resume_dir)
     if resume_dir or cont_dir:
         from_dir = resume_dir or cont_dir
         st = ckpt.read_state(from_dir)

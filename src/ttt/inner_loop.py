@@ -80,10 +80,9 @@ class WriteConfig:
       r_u over the chunk's written slots and the input dimensions' RMS r_d (at the write's forward, held
       constant) give f_u = min(c, (max r / r_u)^a), f_d likewise; after the clip, down rows take f_u and
       gate / up entries min(f_d, f_u).  The dominant units keep the step (the document prior); weaker ones
-      - the chunk's associations - take up to c times it (the research repository's docs/ttt_gain_status.md, 2026-10-05..08: one
-      whole-chunk step; the listed two-channel split, whitening, novelty / top-k / rho^2 weights and two
-      normalised steps per chunk were screened and removed; so were per-layer caps and the step without its
-      mean-key component, 2026-10-11 / 12)."""
+      - the chunk's associations - take up to c times it (2026-10-05..08: one whole-chunk step; the listed
+      two-channel split, whitening, novelty / top-k / rho^2 weights and two normalised steps per chunk were
+      screened and removed; so were per-layer caps and the step without its mean-key component, 2026-10-11 / 12)."""
     subchunks: int = 1
     subchunk_scale: float = 1.0
     surprise_gamma: float = 0.0
@@ -235,7 +234,7 @@ def inner_objective(W: FastWeight, model: Model, h_inner: Array, tokens: Array, 
     if extras is not None and extras.mtp_tgt is not None and model.mtp_head is None:
         raise ValueError("the MTP inner term needs a model with mtp_head")
     if kvb_weight > 0 and model.inner_kvb_value is None:
-        raise ValueError("the key-value-binding write needs a model with inner_kvb_head (configs/1b_e2e_kvb)")
+        raise ValueError("the key-value-binding write needs a model with inner_kvb_head")
     if score_from and (feat_mode != "off" or extras is not None):
         raise ValueError("score_from supports the token-CE / surprise / binding objective only")
     tokens_all = tokens

@@ -1,13 +1,13 @@
 # coding=utf-8
 """
 Reproduction check between two evaluations of the same weights: per-sequence eval files of one
-checkpoint on two machines (e.g. the TPU run's log/<run>/eval_4000.npz and the GPU re-evaluation
-by the research repository's tools/continue_tpu_run.py).  First that both scored the same sequences (sources, document
-starts and lengths, tokens beyond the window: equal arrays), then per array the means and the
-per-sequence differences (mean, quantiles of |B - A|, correlation), per source for the losses.
+checkpoint on two machines (e.g. a TPU run's log/<run>/eval_4000.npz and its re-evaluation on GPU).  First that
+both scored the same sequences (sources, document starts and lengths, tokens beyond the window: equal arrays),
+then per array the means and the per-sequence differences (mean, quantiles of |B - A|, correlation), per source
+for the losses.
 
-    python tools/compare_eval.py log/20260928_090600/eval_4000.npz log/gpu_TL_eval/eval_4000.npz
-    python tools/compare_eval.py log/20260928_090600/eval_4000_planted.npz log/gpu_TL_eval/eval_4000_planted.npz
+    python tools/compare_eval.py log/<run>/eval_4000.npz log/<rerun>/eval_4000.npz
+    python tools/compare_eval.py log/<run>/eval_4000_planted.npz log/<rerun>/eval_4000_planted.npz
 """
 import sys
 

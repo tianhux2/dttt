@@ -9,7 +9,7 @@ import sys
 import numpy as np
 
 _T = "bucket/data/tokens"
-# The long-document mix of the TL / GL runs (2026-09-28) and the PG-19 test set; the sequences are the
+# The long-document mix of the 2026-09-28 runs and the PG-19 test set; the sequences are the
 # held-out tails the evaluation uses (Sampler.eval_batch), never training data.
 DEFAULT_SOURCES = ",".join(f"{n}={_T}/{d}:1.0" for n, d in (
     ("books3", "books3_b01d544bc3b822cb"), ("fineweb_edu_long", "fineweb_edu_long_4fc62ac88e715cab"),
@@ -27,9 +27,8 @@ def require_platform() -> None:
         sys.exit("set JAX_PLATFORMS=cpu, or pin one idle TPU host: "
                  "TPU_HOST_BOUNDS=1,1,1 TPU_CHIPS_PER_HOST_BOUNDS=2,2,1 JAX_PLATFORMS=tpu")
     os.environ.setdefault("TTT_ATTENTION", "xla")
-    # f32 matmuls at full precision (review 2026-10-03, 6.1 #1b): JAX's default is one bf16 pass on TPU and
-    # TF32 on GPU - too coarse for the small logit differences the lens decodes, even with --dtype float32.
-    # The TPU-era results (docs/analysis_2026-09-29_jlens) were computed at that default.
+    # f32 matmuls at full precision: JAX's default is one bf16 pass on TPU and TF32 on GPU - too coarse for the
+    # small logit differences the probes decode, even with --dtype float32.
     import jax
     jax.config.update("jax_default_matmul_precision", "highest")
 
@@ -84,7 +83,7 @@ def sequences(args, cfg):
 
 def tokenizer_for(model_config: str):
     try:
-        from transformers import AutoTokenizer
-        return AutoTokenizer.from_pretrained(model_config)
+        from transformers import PreTrainedTokenizerFast      # not AutoTokenizer: it parses config.json too
+        return PreTrainedTokenizerFast.from_pretrained(model_config)
     except Exception:
         return None

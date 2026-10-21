@@ -11,7 +11,8 @@ Launching from run configurations, on CPU (8 emulated devices):
   and the uninterrupted stage end BITWISE equal; the method's write switched on at a branch trains; the
   last step is always checkpointed; the evaluation runs at the continued step; the same data at another step
   batch is refused (the stream would start again at its first sample);
-* a run from a config file (``data_root`` + relative streams) equals the same run from flags, BITWISE.
+* a run from a config file (``data_root`` + relative streams) equals the same run from flags, BITWISE;
+* ``--resume`` of a checkpoint that decayed on the old cosine schedule is refused; a flat one resumes.
 """
 from __future__ import annotations
 
@@ -237,6 +238,20 @@ def training(failures, tmp):
               "--continue_from", os.path.join(tmp, "trunk", "step_00000002")])
     ok = r.returncode != 0 and "not a complete checkpoint" in (r.stderr + r.stdout)
     _check(failures, ok, "continue_from without a DONE marker is refused")
+
+    # G. a checkpoint of the warmup-cosine schedule (no decay_start in its train_config.json): one that decayed
+    #    (end_lr != lr) is refused on --resume, a flat one (end_lr == lr) resumes
+    rc = {}
+    for name, end_lr in (("cosine", 1e-5), ("cosine_flat", 1e-3)):
+        d = os.path.join(tmp, name, "step_00000003")
+        shutil.copytree(ck("trunk", 3), d)
+        old = json.load(open(os.path.join(d, "train_config.json")))
+        old = {k: v for k, v in old.items() if k not in ("decay_start", "decay_end")}
+        json.dump({**old, "lr": 1e-3, "end_lr": end_lr}, open(os.path.join(d, "train_config.json"), "w"))
+        rc[name] = _run(["--config", trunk_cfg, "--steps", "5", "--ckpt_dir", os.path.join(tmp, name), "--resume", "auto"])
+    ok = (rc["cosine"].returncode != 0 and "warmup-cosine" in (rc["cosine"].stderr + rc["cosine"].stdout)
+          and rc["cosine_flat"].returncode == 0 and "resumed" in rc["cosine_flat"].stdout)
+    _check(failures, ok, "resume of a decaying cosine-era checkpoint refused, a flat one resumes")
 
 
 def main():

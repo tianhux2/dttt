@@ -8,9 +8,9 @@ Workspace in Language Models" (transformer-circuits.pub, 2026):
     lens_l(h) = unembed(J_l h),   unembed = lm_head . final_norm,   J_l = E[ dh_L / dh_l ],
 
 h_L being the LAST layer's residual BEFORE the final norm, so that J = I at the last layer and the lens
-there is the model's own output.  The 2026-09-23 toolkit took h_L after the final norm and decoded with
-the LM head alone.  The RMSNorm Jacobian at h annihilates h itself, J(h) h = eps / r(h)^2 * norm(h), so
-that lens could not reproduce the model even at the last layer (the research repository's ``tests/test_jlens.py`` keeps the check).
+there is the model's own output.  Taking h_L after the final norm and decoding with the LM head alone could
+not reproduce the model even at the last layer: the RMSNorm Jacobian at h annihilates h itself,
+J(h) h = eps / r(h)^2 * norm(h).
 
 Adaptations to this model (the reference targets causal decoders):
 
@@ -88,8 +88,8 @@ class Transplant(NamedTuple):
     contribution ``post_norm(W(x)) - post_norm(W_0(x))`` is taken at ``x_src [F, C, H]`` instead of the
     read's own input ``x``; the template's part ``post_norm(W_0(x))`` stays the read's.  With ``x_src`` the
     write's inputs at the matching slots (``write_keys``), the read queries the memory with the write's keys.
-    ``x_src`` None: the read's own input.  ``scale``: the contribution times this (``memory_budget.py``: an
-    oracle read gate that amplifies the memory at the selected slots only), a scalar or one per slot ``[C]``."""
+    ``x_src`` None: the read's own input.  ``scale``: the contribution times this (an oracle read gate that
+    amplifies the memory at the selected slots only), a scalar or one per slot ``[C]``."""
     x_src: Optional[Array]
     sel: Array
     scale: Union[float, Array] = 1.0
@@ -225,7 +225,7 @@ def _read_suffix(model: Model, h: Array, pos: Array, state, d_out_suf: Array, d_
     ``transplant``: the memory's contributions at its slots taken at its inputs (``Transplant``).
     ``decap``: the fast branch normalised by the TEMPLATE's RMS, ``gamma * W(x) / rms(W_0(x))``, instead of
     its own - equal at W = W_0, but the memory adds to the template's output instead of rotating it
-    within a fixed norm (``memory_budget.py``; a read-time variant, the model was trained without it).
+    within a fixed norm (a read-time variant, the model was trained without it).
     ``den_W``: the same with the RMS of ANOTHER fast weight's output on the same input,
     ``gamma * W(x) / rms(W_den(x))`` (``memory_distance.py``: the memory read through the normalisation of a
     smaller memory - how much the later writes cost through the shared denominator alone)."""

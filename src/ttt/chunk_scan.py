@@ -301,7 +301,7 @@ def loss_fn(model: Model, batch: Batch, key: Array, step: Array, cfg: LossConfig
             raise ValueError("the write schemes need the plain causal write (inner_task causal, one view, a write; "
                              "not with write_off / distill / mtp / inner_feat / inner_update_frac)")
         if cfg.write.kvb_weight > 0 and model.inner_kvb_value is None:
-            raise ValueError("inner_kvb_weight needs a model with inner_kvb_head (configs/1b_e2e_kvb)")
+            raise ValueError("inner_kvb_weight needs a model with inner_kvb_head")
     if not 0.0 <= cfg.window_drop <= 1.0 or not 0.0 <= cfg.self_prior <= 1.0:
         raise ValueError("window_drop and self_prior are probabilities")
     if cfg.self_prior > 0 and (use_gdn or cfg.no_write or cfg.write_off or cfg.inner_from_outer or cfg.write_plan
@@ -330,7 +330,7 @@ def loss_fn(model: Model, batch: Batch, key: Array, step: Array, cfg: LossConfig
         if not cfg.outer_shift or cfg.inner_task != "causal":
             raise ValueError("mtp needs outer_shift and the causal write")
         if model.mtp_head is None:
-            raise ValueError("mtp needs a model with mtp_head (configs/1b_e2e_mtp)")
+            raise ValueError("mtp needs a model with mtp_head")
         tgt_mtp = jnp.pad(ids[:, 2:], ((0, 0), (0, 2)))
         m_mtp = jnp.pad(t_mask[:, 2:], ((0, 0), (0, 2)))
         w_mtp = jnp.pad(w_raw[:, 2:], ((0, 0), (0, 2))) * m_mtp.astype(jnp.float32)
@@ -430,7 +430,7 @@ def loss_fn(model: Model, batch: Batch, key: Array, step: Array, cfg: LossConfig
         if cfg.no_write or cfg.inner_from_outer:
             raise ValueError("inner_feat needs the inner stream (not no_write / inner_from_outer)")
         if model.inner_feat_head is None:
-            raise ValueError("inner_feat needs a model with inner_feat_head (configs/1b_e2e_feat)")
+            raise ValueError("inner_feat needs a model with inner_feat_head")
     tgt_idx_c = feat_target_index(cfg.inner_task, nc, B, C, perm_c if cfg.inner_task == "split" else None) \
         if cfg.inner_feat != "off" else jnp.zeros((nc, B, C), jnp.int32)
 
@@ -465,7 +465,8 @@ def loss_fn(model: Model, batch: Batch, key: Array, step: Array, cfg: LossConfig
     n_seg_chunks = cfg.segment_chunks or nc
     if nc % n_seg_chunks:
         raise ValueError(f"{nc} chunks not a multiple of segment_chunks {n_seg_chunks}")
-    if n_seg_chunks < Wn:
+    if n_seg_chunks < Wn and n_seg_chunks < nc:
+        # (one segment carries no window: a sequence shorter than the window is fine, its missing chunks are masked)
         raise ValueError(f"segment_chunks {n_seg_chunks} < window_chunks {Wn}: the carried window would be short")
     n_seg = nc // n_seg_chunks
     T_seg = n_seg_chunks * C

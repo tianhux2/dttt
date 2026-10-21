@@ -463,7 +463,9 @@ def load_model(ckpt_dir: str, model_config: Optional[str] = None) -> Model:
 def main(argv=None):
     import argparse
     import json
-    from transformers import AutoTokenizer
+    # the tokenizer class itself: AutoTokenizer would also parse the directory's config.json as an HF model config,
+    # which fails on ModelConfig fields (a config with rope_scaling)
+    from transformers import PreTrainedTokenizerFast
 
     # Pre-parse --ckpt to read default hyperparameters from train_config.json if present
     pre_ap = argparse.ArgumentParser(add_help=False)
@@ -517,7 +519,7 @@ def main(argv=None):
     wc = WriteConfig(subchunks=a.inner_subchunks, subchunk_scale=a.inner_subchunk_scale,
                      surprise_gamma=a.inner_surprise_gamma, kvb_weight=a.inner_kvb_weight, kvb_value=a.inner_kvb_value,
                      fast_frac=a.inner_fast_frac, fast_lr_scale=a.inner_fast_lr_scale, fast_decay=a.inner_fast_decay)
-    tok = AutoTokenizer.from_pretrained(a.model_config)
+    tok = PreTrainedTokenizerFast.from_pretrained(a.model_config)
     model = cast_floating(load_model(a.ckpt, a.model_config), jnp.bfloat16)
     prompt = jnp.asarray(tok(a.prompt, add_special_tokens=False)["input_ids"], jnp.int32)
     out = generate(model, prompt, a.max_new_tokens, jax.random.PRNGKey(a.seed), steps=a.steps,

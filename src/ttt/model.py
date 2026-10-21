@@ -79,12 +79,30 @@ def slice_stack(stacked, sl: slice):
     return jax.tree_util.tree_map(lambda x: x[sl], stacked)
 
 
-def rope_cos_sin(pos: Array, head_dim: int, theta: float) -> Tuple[Array, Array]:
+def llama3_inv_freq(inv_freq: Array, scaling) -> Array:
+    """Llama-3 RoPE scaling (HF ``_compute_llama3_parameters``): wavelengths shorter than
+    ``original / high_freq_factor`` keep their frequency, longer than ``original / low_freq_factor``
+    are slowed by ``factor``, the band between is interpolated."""
+    s = dict(scaling)
+    factor, low, high, old = (s["factor"], s["low_freq_factor"], s["high_freq_factor"],
+                              s["original_max_position_embeddings"])
+    wavelen = 2 * math.pi / inv_freq
+    scaled = jnp.where(wavelen > old / low, inv_freq / factor, inv_freq)
+    smooth = (old / wavelen - low) / (high - low)
+    smoothed = (1 - smooth) * scaled / factor + smooth * scaled
+    medium = ~(wavelen < old / high) & ~(wavelen > old / low)
+    return jnp.where(medium, smoothed, scaled)
+
+
+def rope_cos_sin(pos: Array, head_dim: int, theta: float, scaling=None) -> Tuple[Array, Array]:
     """Rotary tables for absolute positions ``pos [T]`` -> ``cos, sin [T, head_dim]`` (f32).
+    ``scaling``: ``ModelConfig.rope_scaling`` (llama3), None for plain RoPE.
 
     No ``inv_freq`` parameter leaf: nothing to exclude from the optimiser.
     """
     inv_freq = 1.0 / (theta ** (jnp.arange(0, head_dim, 2, dtype=jnp.float32) / head_dim))
+    if scaling is not None:
+        inv_freq = llama3_inv_freq(inv_freq, scaling)
     freqs = pos.astype(jnp.float32)[:, None] * inv_freq[None, :]     # [T, d/2]
     emb = jnp.concatenate([freqs, freqs], axis=-1)                     # [T, d]
     return jnp.cos(emb), jnp.sin(emb)
@@ -180,6 +198,7 @@ class Attention(eqx.Module):
     kv_heads: int = eqx.field(static=True)
     head_dim: int = eqx.field(static=True)
     rope_theta: float = eqx.field(static=True)
+    rope_scaling: Any = eqx.field(static=True)
 
     def __init__(self, cfg: ModelConfig, key: Array):
         H, nh, nkv, d = cfg.hidden_size, cfg.num_attention_heads, cfg.num_key_value_heads, cfg.head_dim
@@ -195,6 +214,7 @@ class Attention(eqx.Module):
         self.q_norm = RMSNorm(d, cfg.rms_norm_eps) if cfg.qk_norm else None
         self.k_norm = RMSNorm(d, cfg.rms_norm_eps) if cfg.qk_norm else None
         self.num_heads, self.kv_heads, self.head_dim, self.rope_theta = nh, nkv, d, cfg.rope_theta
+        self.rope_scaling = cfg.rope_scaling
 
     def qkv(self, x: Array, pos: Array, pos_q: Optional[Array] = None) -> Tuple[Array, Array, Array]:
         """``x [T, H], pos [T]`` -> ``q [T, nh, d], k [T, nkv, d], v [T, nkv, d]`` (RoPE applied).
@@ -206,10 +226,10 @@ class Attention(eqx.Module):
         v = self.v(x).reshape(T, self.kv_heads, self.head_dim)
         if self.q_norm is not None:
             q, k = self.q_norm(q), self.k_norm(k)
-        cos, sin = rope_cos_sin(pos, self.head_dim, self.rope_theta)
+        cos, sin = rope_cos_sin(pos, self.head_dim, self.rope_theta, self.rope_scaling)
         if pos_q is None:
             return apply_rope(q, cos, sin), apply_rope(k, cos, sin), v
-        cos_q, sin_q = rope_cos_sin(pos_q, self.head_dim, self.rope_theta)
+        cos_q, sin_q = rope_cos_sin(pos_q, self.head_dim, self.rope_theta, self.rope_scaling)
         return apply_rope(q, cos_q, sin_q), apply_rope(k, cos, sin), v
 
     def attend(self, q: Array, k: Array, v: Array, key_valid: Array, impl: Optional[str] = None,

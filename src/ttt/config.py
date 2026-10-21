@@ -23,8 +23,8 @@ def _load_json(path: str) -> Dict[str, Any]:
         return json.load(f)
 
 
-# Options removed after their screens (the research repository's docs/ttt_gain_status.md), with the value that meant "off": a saved
-# configuration that has them off still loads; one that used them cannot be reproduced and is refused.
+# Options removed after their screens, with the value that meant "off": a saved configuration that has them off
+# still loads; one that used them cannot be reproduced and is refused.
 _REMOVED = {"inner_assoc_scale": 1.0, "inner_prior_units": "", "inner_prior_k": 0, "inner_prior_dims": 0,
             "inner_norm_whiten": False, "self_prior_delay": [0, 0]}
 
@@ -78,6 +78,9 @@ class ModelConfig:
     hidden_act: str = "silu"
     rms_norm_eps: float = 1e-6
     rope_theta: float = 1_000_000.0
+    rope_scaling: Optional[Tuple[Tuple[str, Any], ...]] = None   # HF rope_scaling, llama3 only: rope_type, factor,
+                                            # low_freq_factor, high_freq_factor, original_max_position_embeddings;
+                                            # held as sorted (key, value) pairs (hashable), saved as a dict. None: plain RoPE
     initializer_range: float = 0.02
     tie_word_embeddings: bool = True
     attention_bias: bool = False
@@ -123,6 +126,16 @@ class ModelConfig:
             raise ValueError("num_attention_heads must be a multiple of num_key_value_heads")
         if self.head_dim % 2:
             raise ValueError("head_dim must be even for RoPE")
+        if self.rope_scaling is not None:
+            rs = dict(self.rope_scaling)                         # a JSON dict -> hashable sorted pairs
+            need = {"rope_type", "factor", "low_freq_factor", "high_freq_factor", "original_max_position_embeddings"}
+            if rs.get("rope_type") != "llama3" or set(rs) != need:
+                raise ValueError(f"rope_scaling {rs}: llama3 only, with exactly the keys {sorted(need)}")
+            if not (rs["factor"] >= 1 and 0 < rs["low_freq_factor"] < rs["high_freq_factor"]
+                    and rs["original_max_position_embeddings"] > 0):
+                raise ValueError(f"rope_scaling {rs}: factor >= 1, 0 < low_freq_factor < high_freq_factor, "
+                                 "original_max_position_embeddings > 0")
+            object.__setattr__(self, "rope_scaling", tuple(sorted(rs.items())))
         if not 0 < self.suffix_len <= self.num_hidden_layers:
             raise ValueError("suffix_len must be in (0, num_hidden_layers]")
         if not 0 <= self.suffix_plain_top < self.suffix_len:
@@ -206,8 +219,11 @@ class ModelConfig:
         return _from_dict(cls, _load_json(path))
 
     def save(self, path: str) -> None:
+        d = dataclasses.asdict(self)
+        if d["rope_scaling"] is not None:
+            d["rope_scaling"] = dict(d["rope_scaling"])
         with open(path, "w") as f:
-            json.dump(dataclasses.asdict(self), f, indent=2)
+            json.dump(d, f, indent=2)
 
 
 @dataclass(frozen=True)

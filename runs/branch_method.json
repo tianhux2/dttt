@@ -1,5 +1,5 @@
 {
-  "#": "The method's arm: the baseline arm's settings with the normalised write (alpha 1, cap 128, inner lr 0.82) and self-prior 0.1 switched on at the trunk's last step, as M2200 on GPU (switch at step 2200 of 2500). Then method_32k.json and method_128k.json.",
+  "#": "The method's arm: the baseline arm's settings with the normalised write (alpha 1, cap 128, inner lr 0.82) and self-prior 0.1 switched on at the trunk's last step (tried on GPU as a switch at step 2200 of 2500). Then method_32k.json and method_128k.json.",
   "base": "branch_plain.json",
   "inner_norm_alpha": 1.0,
   "inner_norm_cap": 128,
