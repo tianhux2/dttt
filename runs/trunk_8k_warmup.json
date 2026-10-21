@@ -1,9 +1,0 @@
-{
-  "#": "The trunk's warm-up on 8 nodes of 8 GPUs (64 devices): trunk_8k.json up to the end of warmup_steps, 2 sequences per GPU in one micro-batch on a dp 8 x fsdp 8 mesh. It writes the trunk's own ckpt_dir with the trunk's step batch, so trunk_8k.json resumes its last checkpoint (step_00004999) on any device count, and a fork with the method at the end of the warm-up continues the same checkpoint. With one micro-batch per step the log has no noise scale (it needs grad_accum > 1).",
-  "base": "trunk_8k.json",
-  "batch_size": 128,
-  "grad_accum": 1,
-  "#batch_size": "the trunk's step batch of 128 sequences on 64 devices: 2 per GPU, no gradient accumulation",
-  "steps": 5000,
-  "#steps": "the end of warmup_steps (5000); the last step, 4999, is checkpointed and evaluated"
-}

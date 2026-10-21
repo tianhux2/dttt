@@ -1,0 +1,12 @@
+{
+  "#": "The method switched on at the end of the warm-up: trunk_8k_10k.json's step_00004999 continued to step 10000 with branch_method.json's write (normalised write alpha 1, cap 128, inner lr 0.82; self-prior 0.1). The data stream reads on from the trunk's, so it pairs batch by batch with trunk_8k_10k.json's steps 5000-9999; both are checkpointed and evaluated every 2000 steps (6000, 8000, 10000) and at 5000, the plain arm at the end of its first launch and this one at its start. Start it once ckpt/trunk_8k/step_00004999 has its DONE.",
+  "base": "trunk_8k_10k.json",
+  "continue_from": "ckpt/trunk_8k/step_00004999",
+  "inner_norm_alpha": 1.0,
+  "inner_norm_cap": 128,
+  "inner_lr": 0.82,
+  "self_prior": 0.1,
+  "#inner_norm_alpha": "the four write settings of branch_method.json",
+  "ckpt_dir": "ckpt/method_5k_10k",
+  "log_dir": "log/method_5k_10k"
+}

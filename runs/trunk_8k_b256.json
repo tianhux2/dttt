@@ -1,0 +1,16 @@
+{
+  "#": "Plain TTT at a step batch of 256 sequences on 128 devices, against trunk_8k_10k.json's 128 on 64: at the same tokens (its step 5000 = the trunk's 10000, 10.5B tokens) and at the same steps (10000, twice the tokens). From scratch: a continuation of the same data at another step batch is refused. The schedule is the trunk's in tokens (warm-ups of 2500 steps, the same peak lr 1e-3, then flat). Evaluations every 1000 steps, eval_batches 1: the same 256 held-out sequences and masks per source as the trunk's 2 x 128, at the trunk's tokens up to step 5000 and at its steps 2000-10000. With one micro-batch per step the log has no noise scale (it needs grad_accum > 1).",
+  "base": "trunk_8k.json",
+  "batch_size": 256,
+  "grad_accum": 1,
+  "#batch_size": "a step batch of 256 sequences on 128 devices: 2 per device in one micro-batch, a dp 16 x fsdp 8 mesh",
+  "steps": 10000,
+  "warmup_steps": 2500,
+  "inner_lr_warmup_steps": 2500,
+  "#warmup_steps": "the trunk's 5000-step warm-ups at half the steps: the same 5.2B tokens",
+  "ckpt_interval": 1000,
+  "eval_interval": 1000,
+  "eval_batches": 1,
+  "ckpt_dir": "ckpt/trunk_8k_b256",
+  "log_dir": "log/trunk_8k_b256"
+}

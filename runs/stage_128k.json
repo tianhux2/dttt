@@ -8,7 +8,7 @@
   "truncate_fast_weight": true,
   "prefix_remat_levels": 1,
   "attn_chunk_batch": 1,
-  "#truncate_fast_weight": "the segmented 128K program measured on the v4 pod: stable; without truncation the meta-gradient blew up from a random init. TODO(pilot): try false from a trained model",
+  "#truncate_fast_weight": "the segmented 128K program measured on the v4 pod: stable; without truncation the meta-gradient blew up from a random init",
   "sources": "gutenberg=cp_gutenberg_6d1ade79103fe750:0.17,pre1929=cp_pre1929_fdbe1eb1616b3ee7:0.30,loc=cp_loc_3c5e33209476779f:0.22,doab=cp_doab_81b9b60fb006df0b:0.17,arxiv=cp_arxiv_5752128469516ca7:0.03,starcoder_repo=starcoder_repo_34497f38b4da24f3:0.11",
   "#sources": "TODO(mix): 128K windows are 95 % books (11.6B in all; code 0.40B, arXiv 0.13B, the rest ~0)",
   "steps": 181240,

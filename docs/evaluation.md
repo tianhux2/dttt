@@ -38,8 +38,8 @@ The same suite on the last checkpoint of both arms. These tools run as one proce
   first. An inherited `TTT_COORDINATOR` made the training entry point wait for the other processes; on GPU it failed
   with `KeyError: TTT_PROCESS_ID`.
 - On a host of a multi-host TPU slice, the process must be confined to the host's own chips, or libtpu waits for
-  the whole slice. On the v4 pod this was `TPU_HOST_BOUNDS=1,1,1 TPU_CHIPS_PER_HOST_BOUNDS=2,2,1`; check the v7
-  equivalent first. Alternatively, copy the checkpoint to a GH200 node.
+  the whole slice. On a v4 pod host this was `TPU_HOST_BOUNDS=1,1,1 TPU_CHIPS_PER_HOST_BOUNDS=2,2,1`; check the
+  equivalent for the slice first. Alternatively, copy the checkpoint to a single-host machine.
 - `JAX_PLATFORMS` must be set; the memory tools were always run with `TTT_ATTENTION=xla`.
 
 Example for the method's arm. The final checkpoint is `C=ckpt/method_128k/step_00181239`, and the results go to
@@ -65,7 +65,7 @@ TTT_ATTENTION=xla python -m tools.j_lens.context_learning --ckpt $C --sources "$
 TTT_ATTENTION=xla python -m tools.j_lens.context_learning --ckpt $C --sources "$PROBE" --seq_len 131072 \
     --n_per_source 4 --targets 64,127 --tasks key1,key4 --read l2r --tag method_128k --out $R/cl_128k.npz
 # the likelihood bound with the write on and off, and the gradient noise scale: both run at the checkpoint's own
-# length and (by default) mix, so they use the 8K branch's last checkpoint
+# length (elbo_eval unless --seq_len) and, by default, mix, so they use the 8K branch's last checkpoint
 C8=ckpt/branch_method/step_00178999
 TTT_ATTENTION=xla python tools/elbo_eval.py --ckpt $C8 --sources "$PROBE" --n_per_source 6 --tag method --out $R/elbo.npz
 python tools/grad_noise.py --ckpt $C8 --n_seq 16 --n_masks 4 --views 2 --out $R/noise_step178999.json

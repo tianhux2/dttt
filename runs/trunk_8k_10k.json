@@ -1,0 +1,12 @@
+{
+  "#": "The trunk's first 10000 steps on 64 devices: trunk_8k.json with its step batch of 128 as one micro-batch, 2 sequences per device on a dp 8 x fsdp 8 mesh. It writes the trunk's own ckpt_dir, so trunk_8k.json resumes its last checkpoint (step_00009999) on any device count. Its step_00004999, the end of the warm-up, is where method_5k_10k.json starts: the two are the plain and the method arm from step 5000 to 10000, on the same batches and masks. With one micro-batch per step the log has no noise scale (it needs grad_accum > 1).",
+  "base": "trunk_8k.json",
+  "batch_size": 128,
+  "grad_accum": 1,
+  "#batch_size": "the trunk's step batch of 128 sequences on 64 devices: 2 per device, no gradient accumulation",
+  "steps": 10000,
+  "#steps": "warmup_steps (5000), then 5000 steps at the peak learning rate. Launch it twice: first with --steps 5000, which checkpoints and evaluates its last step, step_00004999 (where method_5k_10k.json starts), then without, which resumes it to 10000 exactly as one run",
+  "ckpt_interval": 2000,
+  "eval_interval": 2000,
+  "#ckpt_interval": "a checkpoint at every evaluation, every 2000 steps; the last step of a launch is always checkpointed and evaluated"
+}

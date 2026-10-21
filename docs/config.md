@@ -28,8 +28,14 @@ Steps are global: a branch or a stage continues the step count of the run it con
 - The arms differ only in `inner_norm_alpha`, `inner_norm_cap`, `inner_lr` and `self_prior` (`branch_method.json`).
   The data order and the per-step random keys are the same, so the arms are compared pair by pair.
 - `tiny_smoke.json`: 20 steps of a tiny model on the same data, the first test of a new machine.
-- `trunk_8k_warmup.json`: the trunk's first 5000 steps (the warm-up) on 8 nodes of 8 GPUs, `128 × 1` on a
-  `dp 8 × fsdp 8` mesh, in the trunk's `ckpt_dir`: `trunk_8k.json` resumes it.
+- `trunk_8k_10k.json`: the trunk's first 10000 steps on 64 devices, `128 × 1` on a `dp 8 × fsdp 8` mesh, in the
+  trunk's `ckpt_dir`: `trunk_8k.json` resumes it. It checkpoints every 2000 steps, so it is launched first with
+  `--steps 5000` (a launch always checkpoints its last step), then without.
+- `method_5k_10k.json`: the method switched on at the end of the warm-up, from the trunk's `step_00004999` to step
+  10000. With `trunk_8k_10k.json` it is a pair of arms from step 5000 on the same batches and masks (section 6).
+- `trunk_8k_b256.json`: plain TTT at a step batch of 256 from scratch on 128 devices, `256 × 1`, to step 10000:
+  against `trunk_8k_10k.json` at the same tokens (its step 5000) and at the same steps, with the trunk's schedule
+  in tokens (section 6).
 
 ## 3. Starting from a checkpoint
 
@@ -58,7 +64,7 @@ means no decay. It replaced a cosine schedule; for the earlier GPU runs, which h
 are bit for bit the same.
 
 The trunk is flat at 1e-3. The branches decay from step 162000 to 181240, the end of the 128K stage: the decay runs
-through the 8K part (89 % of its steps) and both long stages.
+through the 8K part (88 % of its steps) and both long stages.
 
 ## 5. The fields of the main study
 
@@ -160,11 +166,10 @@ The files hold the current best values; these decide them:
 
 | value | now | decided by |
 |:--|:--|:--|
-| `batch_size` | 128 sequences per step (`batch_size × grad_accum`): **decided** | measured on GH200: the critical batch is 93 (plain) to 129 (method) sequences after 1.3B tokens and grows with training; a larger batch is not faster on 128 devices |
+| `batch_size` | 128 sequences per step (`batch_size × grad_accum`): **decided** | measured on GH200: the critical batch is 93 (plain) to 129 (method) sequences after 1.3B tokens and grows with training; a larger batch is not faster on 128 devices; `trunk_8k_b256.json` against `trunk_8k_10k.json` re-tests 256, at the same tokens and at the same steps |
 | `outer_views` | 1 | two reads cost +18 % per step and break even now; re-measure with `tools/grad_noise.py` at ~10B tokens and switch to 2 once the one-read critical batch exceeds ~180 |
 | `sources` (mix) | the v2 weights | **no packing** (decided 2026-10-17): single-document windows only, with enough long documents downloaded that no 8K source is read more than ~3 times ([data.md](data.md), section 7) |
+| the method's switch | at the branch point (step 162000) | `method_5k_10k.json` against `trunk_8k_10k.json` at step 10000; a switch at 5000 makes the arms two runs from there (395B tokens instead of 230B) |
 | `steps`, `decay_*` | 170B trunk + 17.8B + 8.4B + 4.0B tokens | the token budget |
-| `end_lr` | 1e-4 | the pilot |
 | `fsdp_size` | 8, FSDP over the node's 8 GPUs: **decided** (2026-10-18) | the owner |
-| `truncate_fast_weight` at 128K | true | the pilot |
 | `wandb_project`, `keep_checkpoints` | none, all | the owner |
